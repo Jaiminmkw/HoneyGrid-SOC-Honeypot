@@ -1,0 +1,9 @@
+192.168.4.1
+http://localhost:3000/api/logs
+http://localhost:3000
+
+
+
+Node server.js ( ESP8266 attacks run and start Live Dashboard ) ( MAKE SURE PORT IS COM7 AND CONNECTED ESP8266 ON LAPTOP )
+
+Node Simulate_attack.js ( Do Simulate attack capture on dashboard ) ( MAKE SURE PORT IS COM7 AND CONNECTED ESP32 ON LAPTOP )

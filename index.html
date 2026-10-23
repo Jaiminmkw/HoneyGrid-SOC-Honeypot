@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoneyGrid - Wireless Honeypot & SOC Dashboard</title>
+    <!-- Google Fonts & Lucide Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Responsive Analytics Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <i data-lucide="shield-alert" class="brand-icon"></i>
+        </div>
+        <nav class="sidebar-nav">
+            <button class="nav-icon-btn active" data-tab="monitoring" title="Monitoring">
+                <i data-lucide="activity"></i>
+            </button>
+            <button class="nav-icon-btn" data-tab="nodes" title="Honeypot Nodes">
+                <i data-lucide="radio"></i>
+            </button>
+            <button class="nav-icon-btn" data-tab="investigations" title="Investigations">
+                <i data-lucide="triangle-alert"></i>
+            </button>
+            <button class="nav-icon-btn" data-tab="pcap" title="Packet Capture">
+                <i data-lucide="layout-list"></i>
+            </button>
+            <button class="nav-icon-btn" data-tab="reports" title="Reports">
+                <i data-lucide="file-text"></i>
+            </button>
+        </nav>
+        <div class="sidebar-bottom">
+            <button class="nav-icon-btn" id="account-btn-side" title="Account Settings">
+                <i data-lucide="user"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN DASHBOARD CONTENT AREA -->
+    <div class="main-wrapper">
+        
+        <!-- TOP HEADER BAR -->
+        <header class="top-header">
+            <div class="header-left">
+                <div class="logo-title">
+                    <h2>HoneyGrid</h2>
+                    <span>WIRELESS HONEYPOT & SOC</span>
+                </div>
+                <nav class="top-nav-tabs">
+                    <button class="tab-btn active" data-tab="monitoring">Monitoring</button>
+                    <button class="tab-btn" data-tab="nodes">Honeypot Nodes</button>
+                    <button class="tab-btn" data-tab="investigations">Investigations</button>
+                    <button class="tab-btn" data-tab="pcap">Packet Capture</button>
+                    <button class="tab-btn" data-tab="reports">Reports</button>
+                </nav>
+            </div>
+            <div class="header-right">
+                <div class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="Search IP, SSID, MAC, CVE...">
+                </div>
+                <div class="time-badge" id="utc-clock">14:41:03 UTC</div>
+                <button class="icon-btn" title="Alerts"><i data-lucide="bell"></i><span class="badge-dot"></span></button>
+                <div class="user-avatar" id="account-btn" title="Click for Account Settings">JM</div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA WITH TABS -->
+        <main class="content-container">
+
+            <!-- TAB 1: MONITORING DASHBOARD -->
+            <section id="monitoring" class="tab-pane active">
+                
+                <!-- ROW 1: TOP 4 STATS CARDS -->
+                <div class="grid-4-col mb-4">
+                    <div class="card stat-card">
+                        <div class="stat-label">ACTIVE ROGUE DEVICES</div>
+                        <div class="stat-value">37</div>
+                        <div class="stat-meta text-success"><i data-lucide="arrow-up-right"></i> 4.2% vs 24h</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-label">HONEYPOT INTERACTIONS</div>
+                        <div class="stat-value">1,284</div>
+                        <div class="stat-meta text-success"><i data-lucide="arrow-up-right"></i> 12.8% vs 24h</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-label">PACKETS CAPTURED / S</div>
+                        <div class="stat-value">926</div>
+                        <div class="stat-meta text-danger"><i data-lucide="arrow-down-right"></i> 1.1% vs 24h</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-label">OPEN CRITICAL ALERTS</div>
+                        <div class="stat-value text-danger">9</div>
+                        <div class="stat-meta text-danger"><i data-lucide="arrow-up-right"></i> Multi-layer</div>
+                    </div>
+                </div>
+
+                <!-- ROW 2: THREAT DETECTIONS & LIVE CAPTURE FEED -->
+                <div class="grid-2-1-col mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Real-Time Threat Detections</span>
+                            <div class="legend-group">
+                                <span class="legend-item"><span class="dot cyan"></span> Wireless</span>
+                                <span class="legend-item"><span class="dot amber"></span> Network/App</span>
+                                <span class="legend-item"><span class="dot red"></span> MITM</span>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="height: 280px;">
+                            <canvas id="threatChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Live Capture Feed</span>
+                            <span class="live-pill"><span class="pulse-dot"></span> LIVE</span>
+                        </div>
+                        <div class="console-box" id="consoleFeed">
+                            <div class="log-line"><span class="time">[14:40:51]</span> <span class="text-info">probe request</span> 151.6.22.232 SSID="Free_Airport_WiFi"</div>
+                            <div class="log-line"><span class="time">[14:40:53]</span> <span class="text-amber">rogue AP beacon</span> bssid=b8:3d:1a:11:95:27 rssi=-42dBm</div>
+                            <div class="log-line"><span class="time">[14:40:54]</span> <span class="text-danger">evil twin match spoofing SSID of node HP-03</span></div>
+                            <div class="log-line"><span class="time">[14:40:55]</span> <span class="text-danger">brute force attack detected on HTTP login</span></div>
+                            <div class="log-line"><span class="time">[14:40:57]</span> <span class="text-danger">ARP spoofing / MITM gateway interception</span></div>
+                            <div class="log-line"><span class="time">[14:40:58]</span> <span class="text-warning">port scan SYN sweep detected</span> 192.168.4.105</div>
+                            <div class="log-line"><span class="time">[14:41:00]</span> <span class="text-danger">HTTP flood DoS burst threshold exceeded</span></div>
+                            <div class="log-line"><span class="time">[14:41:01]</span> <span class="text-success">handshake captured</span> 40.164.178.118 WPA2-PSK</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 3: PACKET ACTIVITY & SONAR -->
+                <div class="grid-2-1-col mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Network Packet Activity</span>
+                            <span class="card-sub">Multi-Vector Monitor · ch 1-11 & Layer 3/4/7</span>
+                        </div>
+                        <div class="chart-container" style="height: 260px;">
+                            <canvas id="packetChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card align-center-content">
+                        <div class="card-header width-100">
+                            <span class="card-title">Attacker Origin Sonar</span>
+                            <span class="card-sub">by region, last 60m</span>
+                        </div>
+                        <div class="sonar-wrapper">
+                            <div class="sonar-ring r1"></div>
+                            <div class="sonar-ring r2"></div>
+                            <div class="sonar-ring r3"></div>
+                            <div class="sonar-sweep"></div>
+                            <div class="sonar-blip b1" style="top:25%; left:65%;" title="NA Region"></div>
+                            <div class="sonar-blip b2" style="top:70%; left:30%;" title="APAC"></div>
+                            <div class="sonar-blip b3" style="top:45%; left:80%;" title="EU"></div>
+                            <div class="sonar-labels">
+                                <span class="lbl-top">OCE</span>
+                                <span class="lbl-right">SA</span>
+                                <span class="lbl-bottom">AF</span>
+                                <span class="lbl-left">APAC</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 4: SEVERITY, NODES & EXPOSURE SCORE -->
+                <div class="grid-3-col mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Threat Severity Breakdown</span>
+                        </div>
+                        <div class="bar-breakdown-list">
+                            <div class="breakdown-item">
+                                <div class="item-label">Deauth Flood</div>
+                                <div class="bar-outer"><div class="bar-inner bg-red" style="width: 85%;"></div></div>
+                            </div>
+                            <div class="breakdown-item">
+                                <div class="item-label">ARP Spoofing / MITM</div>
+                                <div class="bar-outer"><div class="bar-inner bg-red" style="width: 80%;"></div></div>
+                            </div>
+                            <div class="breakdown-item">
+                                <div class="item-label">Evil Twin AP</div>
+                                <div class="bar-outer"><div class="bar-inner bg-red" style="width: 72%;"></div></div>
+                            </div>
+                            <div class="breakdown-item">
+                                <div class="item-label">DoS / HTTP Flood</div>
+                                <div class="bar-outer"><div class="bar-inner bg-amber" style="width: 68%;"></div></div>
+                            </div>
+                            <div class="breakdown-item">
+                                <div class="item-label">Brute Force / SSH</div>
+                                <div class="bar-outer"><div class="bar-inner bg-amber" style="width: 60%;"></div></div>
+                            </div>
+                            <div class="breakdown-item">
+                                <div class="item-label">Karma & Beacon Flood</div>
+                                <div class="bar-outer"><div class="bar-inner bg-cyan" style="width: 45%;"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Honeypot Node Status</span>
+                            <span class="card-sub">6 deployed</span>
+                        </div>
+                        <div class="node-status-list">
+                            <div class="node-row">
+                                <div>
+                                    <div class="node-name">HP-01 · Lobby</div>
+                                    <div class="node-sub">2.4GHz · ch 6</div>
+                                </div>
+                                <span class="badge bg-success-light text-success">● ACTIVE</span>
+                            </div>
+                            <div class="node-row">
+                                <div>
+                                    <div class="node-name">HP-02 · Parking Lot</div>
+                                    <div class="node-sub">5GHz · ch 44</div>
+                                </div>
+                                <span class="badge bg-amber-light text-amber">● ENGAGED</span>
+                            </div>
+                            <div class="node-row">
+                                <div>
+                                    <div class="node-name">HP-03 · Server Room</div>
+                                    <div class="node-sub">2.4GHz · ch 1</div>
+                                </div>
+                                <span class="badge bg-success-light text-success">● ACTIVE</span>
+                            </div>
+                            <div class="node-row">
+                                <div>
+                                    <div class="node-name">HP-04 · Rooftop</div>
+                                    <div class="node-sub">5GHz · ch 149</div>
+                                </div>
+                                <span class="badge bg-success-light text-success">● ACTIVE</span>
+                            </div>
+                            <div class="node-row">
+                                <div>
+                                    <div class="node-name">HP-05 · East Wing</div>
+                                    <div class="node-sub">2.4GHz · ch 11</div>
+                                </div>
+                                <span class="badge bg-muted text-sub">● OFFLINE</span>
+                            </div>
+                            <div class="node-row">
+                                <div>
+                                    <div class="node-name">HP-06 · Loading Dock</div>
+                                    <div class="node-sub">5GHz · ch 36</div>
+                                </div>
+                                <span class="badge bg-amber-light text-amber">● ENGAGED</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card align-center-content">
+                        <div class="card-header width-100">
+                            <span class="card-title">Network Exposure Score</span>
+                        </div>
+                        <div class="score-circle-wrapper">
+                            <svg class="score-svg" viewBox="0 0 100 100">
+                                <circle class="score-bg" cx="50" cy="50" r="40"></circle>
+                                <circle class="score-meter" cx="50" cy="50" r="40" style="stroke-dashoffset: 80;"></circle>
+                            </svg>
+                            <div class="score-center">
+                                <div class="score-num">78</div>
+                                <div class="score-sub">/ 100 risk</div>
+                            </div>
+                        </div>
+                        <div class="score-footer">
+                            <div><strong>18</strong><br><small>Open Ports</small></div>
+                            <div class="divider-v"></div>
+                            <div><strong>5</strong><br><small>Weak Ciphers</small></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 5: WIRELESS ATTACK INFO & DYNAMIC ATTACK TYPE DISTRIBUTION -->
+                <div class="grid-2-col mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <span class="card-title">Multi-Layer Threat Vectors</span>
+                                <div class="card-sub">Real-time attack vector summary</div>
+                            </div>
+                            <span class="live-pill"><span class="pulse-dot"></span> LIVE</span>
+                        </div>
+                        <div class="attack-info-grid">
+                            <div class="info-cell">
+                                <div class="cell-label">TARGET SSID</div>
+                                <div class="cell-value">Campus_WiFi</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="cell-label">BSSID / MAC</div>
+                                <div class="cell-value">7C:9E:BD:21:4A:91</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="cell-label">MITM DETECTED</div>
+                                <div class="cell-value text-danger">● ARP / SSL Strip</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="cell-label">BRUTE FORCE</div>
+                                <div class="cell-value text-amber">● ACTIVE</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="cell-label">SIGNAL STRENGTH</div>
+                                <div class="cell-value">-47 dBm</div>
+                                <div class="bar-outer mt-1"><div class="bar-inner bg-cyan" style="width: 75%;"></div></div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="cell-label">PORT SCAN / DoS</div>
+                                <div class="cell-value text-danger">● HIGH BURST</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="cell-label">DEAUTH ATTEMPTS</div>
+                                <div class="cell-value text-amber">21</div>
+                            </div>
+                            <div class="info-cell">
+                                <div class="cell-label">EVIL TWIN / KARMA</div>
+                                <div class="cell-value text-danger">● DETECTED</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FIXED DYNAMIC ATTACK DISTRIBUTION BOX FOR ALL 9 ATTACKS -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <span class="card-title">Attack Type Distribution</span>
+                                <div class="card-sub">Detected security events (9 Vectors)</div>
+                            </div>
+                            <div class="stat-meta text-bold" style="font-size:1.2rem;"><span id="total-attacks-count">0</span> <small>Total</small></div>
+                        </div>
+                        <div class="distribution-list">
+                            <div class="dist-item">
+                                <span class="dist-name">Deauth Flood</span>
+                                <div class="bar-outer"><div id="bar-deauth" class="bar-inner bg-cyan" style="width: 0%;"></div></div>
+                                <span id="pct-deauth" class="dist-pct">0%</span>
+                            </div>
+                            <div class="dist-item">
+                                <span class="dist-name">Beacon Flood</span>
+                                <div class="bar-outer"><div id="bar-beacon" class="bar-inner bg-amber" style="width: 0%;"></div></div>
+                                <span id="pct-beacon" class="dist-pct">0%</span>
+                            </div>
+                            <div class="dist-item">
+                                <span class="dist-name">Probe Flood</span>
+                                <div class="bar-outer"><div id="bar-probe" class="bar-inner bg-purple" style="width: 0%;"></div></div>
+                                <span id="pct-probe" class="dist-pct">0%</span>
+                            </div>
+                            <div class="dist-item">
+                                <span class="dist-name">Evil Twin AP</span>
+                                <div class="bar-outer"><div id="bar-eviltwin" class="bar-inner bg-red" style="width: 0%;"></div></div>
+                                <span id="pct-eviltwin" class="dist-pct">0%</span>
+                            </div>
+                            <div class="dist-item">
+                                <span class="dist-name">Karma Attack</span>
+                                <div class="bar-outer"><div id="bar-karma" class="bar-inner bg-amber" style="width: 0%;"></div></div>
+                                <span id="pct-karma" class="dist-pct">0%</span>
+                            </div>
+                            <div class="dist-item">
+                                <span class="dist-name">Brute Force</span>
+                                <div class="bar-outer"><div id="bar-bruteforce" class="bar-inner bg-red" style="width: 0%;"></div></div>
+                                <span id="pct-bruteforce" class="dist-pct">0%</span>
+                            </div>
+                            <div class="dist-item">
+                                <span class="dist-name">DoS / HTTP Flood</span>
+                                <div class="bar-outer"><div id="bar-dos" class="bar-inner bg-red" style="width: 0%;"></div></div>
+                                <span id="pct-dos" class="dist-pct">0%</span>
+                            </div>
+                            <div class="dist-item">
+                                <span class="dist-name">Port Scan & SSH</span>
+                                <div class="bar-outer"><div id="bar-portscan" class="bar-inner bg-purple" style="width: 0%;"></div></div>
+                                <span id="pct-portscan" class="dist-pct">0%</span>
+                            </div>
+                            <div class="dist-item">
+                                <span class="dist-name">ARP / MITM</span>
+                                <div class="bar-outer"><div id="bar-mitm" class="bar-inner bg-red" style="width: 0%;"></div></div>
+                                <span id="pct-mitm" class="dist-pct">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 6: NETWORK TOPOLOGY MAP (DYNAMIC OVERLAY) -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div>
+                            <span class="card-title">Attacker / Device Map</span>
+                            <div class="card-sub">Wireless device relationship and activity</div>
+                        </div>
+                        <span class="card-sub">08 devices</span>
+                    </div>
+                    <div class="topology-wrapper" style="position: relative;">
+                        <!-- SVG overlay to draw active connections dynamically -->
+                        <svg class="topo-svg" id="topoCanvas" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none;"></svg>
+
+                        <!-- Nodes with proper positions -->
+                        <div class="topo-node node-attacker" style="top: 20%; left: 8%; z-index:2;">
+                            <i data-lucide="alert-triangle"></i>
+                            <div>
+                                <strong>Device-01</strong>
+                                <small>192.168.4.21</small>
+                            </div>
+                            <span class="tag bg-red">ATTACK</span>
+                        </div>
+
+                        <div class="topo-node node-gateway" style="top: 60%; left: 12%; z-index:2;">
+                            <i data-lucide="router"></i>
+                            <div>
+                                <strong>Wi-Fi Gateway</strong>
+                                <small>Network Core</small>
+                            </div>
+                            <span class="tag bg-cyan">ONLINE</span>
+                        </div>
+
+                        <div class="topo-node node-suspicious" style="top: 65%; left: 28%; z-index:2;">
+                            <i data-lucide="alert-circle"></i>
+                            <div>
+                                <strong>Device-02</strong>
+                                <small>192.168.4.28</small>
+                            </div>
+                            <span class="tag bg-amber">HIGH</span>
+                        </div>
+
+                        <div class="topo-node node-honeypot" style="top: 35%; left: 48%; z-index:2;">
+                            <i data-lucide="box"></i>
+                            <div>
+                                <strong>HP-03</strong>
+                                <small>Wireless Honeypot</small>
+                            </div>
+                        </div>
+
+                        <div class="topo-node node-safe" style="top: 15%; left: 72%; z-index:2;">
+                            <i data-lucide="laptop"></i>
+                            <div>
+                                <strong>Client-03</strong>
+                                <small>192.168.4.35</small>
+                            </div>
+                            <span class="tag bg-green">SAFE</span>
+                        </div>
+
+                        <div class="topo-node node-attacker" style="top: 55%; left: 85%; z-index:2;">
+                            <i data-lucide="smartphone"></i>
+                            <div>
+                                <strong>Device-05</strong>
+                                <small>AA:BB:CC:11</small>
+                            </div>
+                            <span class="tag bg-red">ATTACK</span>
+                        </div>
+
+                        <div class="topo-node node-safe" style="top: 75%; left: 85%; z-index:2;">
+                            <i data-lucide="monitor"></i>
+                            <div>
+                                <strong>Client-04</strong>
+                                <small>192.168.4.41</small>
+                            </div>
+                            <span class="tag bg-green">SAFE</span>
+                        </div>
+                    </div>
+                    <div class="topo-legend">
+                        <span><span class="dot green"></span> Safe Device</span>
+                        <span><span class="dot amber"></span> Suspicious</span>
+                        <span><span class="dot red"></span> Attacker</span>
+                        <span><span class="dot cyan"></span> Honeypot</span>
+                    </div>
+                </div>
+
+                <!-- ROW 7: SYSTEM HEALTH & ATTACK DETAILS -->
+                <div class="grid-2-col mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <span class="card-title">System Health</span>
+                                <div class="card-sub">HoneyGrid infrastructure status</div>
+                            </div>
+                            <div class="text-success text-bold" style="font-size:1.2rem;">98% <small>HEALTHY</small></div>
+                        </div>
+                        <div class="health-list">
+                            <div class="health-item">
+                                <span>ESP8266 Honeypot</span>
+                                <span class="text-success font-mono">● ONLINE</span>
+                            </div>
+                            <div class="health-item">
+                                <span>SOC Server</span>
+                                <span class="text-success font-mono">● ONLINE</span>
+                            </div>
+                            <div class="health-item">
+                                <span>Database</span>
+                                <span class="text-success font-mono">● ONLINE</span>
+                            </div>
+                            <div class="health-item">
+                                <span>WebSocket</span>
+                                <span class="text-cyan font-mono">● CONNECTED</span>
+                            </div>
+                            <div class="health-meter mt-3">
+                                <div class="d-flex justify-between font-mono mb-1">
+                                    <span>CPU Usage</span>
+                                    <span>44%</span>
+                                </div>
+                                <div class="bar-outer"><div class="bar-inner bg-cyan" style="width: 44%;"></div></div>
+                            </div>
+                            <div class="health-meter mt-2">
+                                <div class="d-flex justify-between font-mono mb-1">
+                                    <span>Memory Usage</span>
+                                    <span>49%</span>
+                                </div>
+                                <div class="bar-outer"><div class="bar-inner bg-cyan" style="width: 49%;"></div></div>
+                            </div>
+                            <div class="card-sub mt-2">Last telemetry sync: <span class="text-success">just now</span></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <span class="card-title">Attack Details</span>
+                                <div class="card-sub">Selected security incident</div>
+                            </div>
+                            <span class="badge bg-red text-white">CRITICAL</span>
+                        </div>
+                        <div class="attack-details-grid">
+                            <div class="detail-row"><span class="lbl">ATTACK TYPE</span><span class="val text-bold">ARP Spoofing / MITM</span></div>
+                            <div class="detail-row"><span class="lbl">STATUS</span><span class="val text-amber">INVESTIGATING</span></div>
+                            <div class="detail-row"><span class="lbl">SOURCE MAC</span><span class="val font-mono">AA:BB:CC:DD:EE:FF</span></div>
+                            <div class="detail-row"><span class="lbl">SOURCE IP</span><span class="val font-mono">192.168.4.21</span></div>
+                            <div class="detail-row"><span class="lbl">TARGET SSID</span><span class="val">Campus_WiFi</span></div>
+                            <div class="detail-row"><span class="lbl">HONEYPOT</span><span class="val">HP-03</span></div>
+                            <div class="detail-row"><span class="lbl">CHANNEL</span><span class="val">6</span></div>
+                            <div class="detail-row"><span class="lbl">FIRST DETECTED</span><span class="val">23:04:21</span></div>
+                        </div>
+                        <div class="action-buttons-group mt-3">
+                            <button class="btn btn-primary" id="btn-investigate">Investigate</button>
+                            <button class="btn btn-secondary" id="btn-reviewed">Mark Reviewed</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 8: SECURITY ALERTS LIST -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <span class="card-title">Security Alerts</span>
+                            <div class="card-sub">Real-time wireless & network security events</div>
+                        </div>
+                        <span class="live-pill"><span class="pulse-dot"></span> LIVE</span>
+                    </div>
+                    <div class="alerts-table">
+                        <div class="alert-item">
+                            <span class="badge bg-red">CRITICAL</span>
+                            <div class="alert-content">
+                                <strong>ARP Spoofing / MITM attack detected</strong>
+                                <small>Gateway IP intercepted by rogue MAC address</small>
+                            </div>
+                            <span class="font-mono text-sub">192.168.4.21</span>
+                            <span class="text-sub">just now</span>
+                        </div>
+                        <div class="alert-item">
+                            <span class="badge bg-red">CRITICAL</span>
+                            <div class="alert-content">
+                                <strong>HTTP Flood DoS attack in progress</strong>
+                                <small>Abnormal request burst rate detected on web server</small>
+                            </div>
+                            <span class="font-mono text-sub">192.168.4.88</span>
+                            <span class="text-sub">5 sec ago</span>
+                        </div>
+                        <div class="alert-item">
+                            <span class="badge bg-amber">HIGH</span>
+                            <div class="alert-content">
+                                <strong>Deauthentication flood detected</strong>
+                                <small>Multiple deauthentication frames observed</small>
+                            </div>
+                            <span class="font-mono text-sub">AA:BB:CC:11</span>
+                            <span class="text-sub">12 sec ago</span>
+                        </div>
+                        <div class="alert-item">
+                            <span class="badge bg-amber">HIGH</span>
+                            <div class="alert-content">
+                                <strong>SSH Brute Force login attempts</strong>
+                                <small>Multiple failed authentication requests on port 22</small>
+                            </div>
+                            <span class="font-mono text-sub">192.168.4.105</span>
+                            <span class="text-sub">22 sec ago</span>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 2: HONEYPOT NODES TAB -->
+            <section id="nodes" class="tab-pane">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <span class="card-title">Deployed Honeypot Nodes</span>
+                        <button class="btn btn-primary" id="add-node-btn"><i data-lucide="plus"></i> Add New Node</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>NODE ID</th>
+                                <th>LOCATION</th>
+                                <th>BAND & CH</th>
+                                <th>MAC ADDRESS</th>
+                                <th>STATUS</th>
+                                <th>PAIRED CLIENTS</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>HP-01</strong></td>
+                                <td>Main Lobby</td>
+                                <td>2.4 GHz (Ch 6)</td>
+                                <td class="font-mono">00:11:22:33:44:55</td>
+                                <td><span class="badge bg-success-light text-success">Active</span></td>
+                                <td>14</td>
+                                <td><button class="btn btn-sm btn-secondary">Configure</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>HP-02</strong></td>
+                                <td>Parking Lot B</td>
+                                <td>5.0 GHz (Ch 44)</td>
+                                <td class="font-mono">00:11:22:33:44:56</td>
+                                <td><span class="badge bg-amber-light text-amber">Engaged</span></td>
+                                <td>3</td>
+                                <td><button class="btn btn-sm btn-secondary">Configure</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>HP-03</strong></td>
+                                <td>Server Room</td>
+                                <td>2.4 GHz (Ch 1)</td>
+                                <td class="font-mono">00:11:22:33:44:57</td>
+                                <td><span class="badge bg-success-light text-success">Active</span></td>
+                                <td>0</td>
+                                <td><button class="btn btn-sm btn-secondary">Configure</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>HP-04</strong></td>
+                                <td>Rooftop AP</td>
+                                <td>5.0 GHz (Ch 149)</td>
+                                <td class="font-mono">00:11:22:33:44:58</td>
+                                <td><span class="badge bg-success-light text-success">Active</span></td>
+                                <td>8</td>
+                                <td><button class="btn btn-sm btn-secondary">Configure</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>HP-05</strong></td>
+                                <td>East Wing Office</td>
+                                <td>2.4 GHz (Ch 11)</td>
+                                <td class="font-mono">00:11:22:33:44:59</td>
+                                <td><span class="badge bg-muted text-sub">Offline</span></td>
+                                <td>0</td>
+                                <td><button class="btn btn-sm btn-secondary">Reboot</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 3: INVESTIGATIONS TAB -->
+            <section id="investigations" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Incident Forensic Case Files</span>
+                    </div>
+                    <div class="grid-2-col">
+                        <div class="card style-inner-card">
+                            <h3>Case #INC-2026-8891</h3>
+                            <p class="text-sub">Evil Twin & Deauth Flooding on Campus_WiFi</p>
+                            <hr class="my-2">
+                            <p><strong>Target BSSID:</strong> 7C:9E:BD:21:4A:91</p>
+                            <p><strong>Attacker MAC:</strong> AA:BB:CC:DD:EE:FF</p>
+                            <p><strong>Severity:</strong> <span class="badge bg-red">Critical</span></p>
+                            <br>
+                            <button class="btn btn-primary">Download Raw PCAP</button>
+                        </div>
+                        <div class="card style-inner-card">
+                            <h3>Case #INC-2026-8840</h3>
+                            <p class="text-sub">Karma Attack via Spoofed SSID List</p>
+                            <hr class="my-2">
+                            <p><strong>Target BSSID:</strong> 88:99:AA:BB:CC:DD</p>
+                            <p><strong>Attacker MAC:</strong> 12:34:56:78:90:AB</p>
+                            <p><strong>Severity:</strong> <span class="badge bg-amber">High</span></p>
+                            <br>
+                            <button class="btn btn-primary">Download Raw PCAP</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: PACKET CAPTURE TAB -->
+            <section id="pcap" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Live 802.11 & Network Frame Sniffer</span>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary btn-sm" id="pcap-toggle">Pause Sniffer</button>
+                            <button class="btn btn-secondary btn-sm" id="pcap-clear">Clear Stream</button>
+                        </div>
+                    </div>
+                    <div class="console-box" style="height: 450px;" id="pcap-list">
+                        <div class="log-line"><span class="time">14:41:00.122</span> [MGMT] Beacon Frame [SSID: Campus_WiFi] [BSSID: 7C:9E:BD:21:4A:91] RSSI: -45dBm</div>
+                        <div class="log-line"><span class="time">14:41:00.310</span> [DATA] WPA2 Encrypted Handshake Msg 1/4 -> Client 192.168.4.21</div>
+                        <div class="log-line"><span class="time">14:41:00.412</span> [MGMT] Deauth Frame Reason 7 (Class 3 frame received from nonassociated STA)</div>
+                        <div class="log-line text-danger"><span class="time">14:41:00.590</span> [ALERT] High density Deauth packets threshold breached (50 pkt/sec)</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: REPORTS TAB -->
+            <section id="reports" class="tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">SOC Analytics & Executive Compliance Reports</span>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-sub">Select date range and format to export security assessment logs.</p>
+                        <div class="d-flex gap-3 my-3">
+                            <input type="date" class="form-input" id="report-start-date" value="2026-09-01">
+                            <input type="date" class="form-input" id="report-end-date" value="2026-09-26">
+                            <button class="btn btn-primary" id="btn-generate-pdf">Generate PDF Report</button>
+                            <button class="btn btn-secondary" id="btn-export-csv">Export CSV</button>
+                        </div>
+
+                        <!-- Printable Dynamic Live Report Area -->
+                        <div id="pdf-report-preview" class="printable-report">
+                            <h2>HoneyGrid Wireless & Network Incident Report</h2>
+                            
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Event Type</th>
+                                        <th>Source MAC/IP</th>
+                                        <th>Target BSSID/Node</th>
+                                        <th>RSSI / Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pdf-report-tbody">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center;">Waiting for live captured packets...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ACCOUNT & PROFILE MODAL -->
+    <div class="modal-overlay" id="account-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>SOC Operator Account</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="user-profile-header">
+                    <div class="avatar-large">JM</div>
+                    <div>
+                        <h4>Jaimin Makwana</h4>
+                        <p class="text-sub">SOC Analyst (Leval 1)</p>
+                    </div>
+                </div>
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" class="form-input" value="Jaiminmkw@proton.me">
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <input type="text" class="form-input" value="Administrator / Incident Responder" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>API Key (SOC Integration)</label>
+                        <input type="text" class="form-input font-mono" value="hg_live" readonly>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
